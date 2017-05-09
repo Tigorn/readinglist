@@ -47,6 +47,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         #else
             Fabric.with([Crashlytics.self])
         #endif
+        
+        UIFont.swizzleSystemFont()
+        
         return true
     }
     

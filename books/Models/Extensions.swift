@@ -277,3 +277,57 @@ extension NSPredicate {
         return NSPredicate.And([self, andPredicate])
     }
 }
+
+extension UIFont {
+    class var defaultFontFamily: String { return "Gill Sans" }
+
+    class func swizzleSystemFont()
+    {
+        let systemPreferredFontMethod = class_getClassMethod(self, #selector(UIFont.preferredFont(forTextStyle:)))
+        let mySystemPreferredFontMethod = class_getClassMethod(self, #selector(UIFont.myPreferredFont(forTextStyle:)))
+        method_exchangeImplementations(systemPreferredFontMethod, mySystemPreferredFontMethod)
+        
+        let systemFontMethod = class_getClassMethod(self, #selector(UIFont.systemFont(ofSize:)))
+        let mySystemFontMethod = class_getClassMethod(self, #selector(UIFont.mySystemFont(ofSize:)))
+        
+        method_exchangeImplementations(systemFontMethod, mySystemFontMethod)
+        
+        let boldSystemFontMethod = class_getClassMethod(self, #selector(UIFont.boldSystemFont(ofSize:)))
+        let myBoldSystemFontMethod = class_getClassMethod(self, #selector(UIFont.myBoldSystemFont(ofSize:)))
+        method_exchangeImplementations(boldSystemFontMethod, myBoldSystemFontMethod)
+        
+        let italicSystemFontMethod = class_getClassMethod(self, #selector(UIFont.italicSystemFont(ofSize:)))
+        let myItalicSystemFontMethod = class_getClassMethod(self, #selector(UIFont.myItalicSystemFont(ofSize:)))
+        method_exchangeImplementations(italicSystemFontMethod, myItalicSystemFontMethod)
+    }
+    
+    @objc private class func myPreferredFont(forTextStyle style: String) -> UIFont
+    {
+        let defaultFont = myPreferredFont(forTextStyle: style)  // will not cause stack overflow - this is now the old, default UIFont.preferredFontForTextStyle
+        let newDescriptor = UIFontDescriptor(name: defaultFontFamily, size: defaultFont.pointSize)
+        return UIFont(descriptor: newDescriptor, size: defaultFont.pointSize + 2)
+    }
+    
+    @objc fileprivate class func mySystemFont(ofSize fontSize: CGFloat) -> UIFont
+    {
+        return myDefaultFont(ofSize: fontSize)
+    }
+    
+    @objc private class func myBoldSystemFont(ofSize fontSize: CGFloat) -> UIFont
+    {
+        var descriptor = UIFontDescriptor(name: defaultFontFamily, size: fontSize)
+        descriptor = descriptor.addingAttributes([UIFontDescriptorTraitsAttribute: [UIFontWeightTrait : UIFontWeightSemibold]])
+        return UIFont(descriptor: descriptor, size: fontSize == 0 ? 0 : fontSize + 2)
+    }
+    
+    @objc private class func myItalicSystemFont(ofSize fontSize: CGFloat) -> UIFont
+    {
+        return myDefaultFont(ofSize: fontSize, withTraits: .traitItalic)
+    }
+    
+    @objc private class func myDefaultFont(ofSize fontSize: CGFloat, withTraits traits: UIFontDescriptorSymbolicTraits = []) -> UIFont
+    {
+        let descriptor = UIFontDescriptor(name: defaultFontFamily, size: fontSize).withSymbolicTraits(traits)
+        return UIFont(descriptor: descriptor!, size: fontSize == 0 ? 0 : fontSize + 2)
+    }
+}
